@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCTS Visualization - Gomoku</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 500px 1fr;
+            gap: 30px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .board-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .board {
+            display: inline-block;
+            background: #daa520;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 40px);
+            grid-template-rows: repeat(9, 40px);
+            gap: 0;
+            background: #8b6914;
+        }
+
+        .cell {
+            width: 40px;
+            height: 40px;
+            background: #daa520;
+            border: 1px solid #8b6914;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .cell:hover {
+            background: #f0d080;
+        }
+
+        .cell.has-stone {
+            cursor: not-allowed;
+        }
+
+        .cell.has-stone:hover {
+            background: #daa520;
+        }
+
+        .stone {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .stone.black {
+            background: radial-gradient(circle at 30% 30%, #444, #000);
+        }
+
+        .stone.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+        }
+
+        .cell.best-move {
+            background: #90EE90 !important;
+        }
+
+        .cell.good-move {
+            background: #c8e6c9 !important;
+        }
+
+        .cell.bad-move {
+            background: #ffcdd2 !important;
+        }
+
+        .cell.current-simulation {
+            background: #fff59d !important;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: #95a5a6;
+        }
+
+        button.secondary:hover {
+            background: #7f8c8d;
+        }
+
+        button.danger {
+            background: #e74c3c;
+        }
+
+        button.danger:hover {
+            background: #c0392b;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .info-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .info-panel h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .phase-indicator {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .phase {
+            text-align: center;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: 600;
+            transition: all 0.3s;
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .phase.active {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .phase.inactive {
+            background: #ecf0f1;
+            color: #7f8c8d;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .tree-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 400px;
+            overflow: auto;
+        }
+
+        .tree-node {
+            margin: 10px 0;
+            padding: 15px;
+            background: white;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+
+        .tree-node:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        .tree-node.selected {
+            background: #e8eaf6;
+            border-left-color: #3f51b5;
+            box-shadow: 0 4px 12px rgba(63, 81, 181, 0.3);
+        }
+
+        .tree-node.current {
+            background: #fff9c4;
+            border-left-color: #fbc02d;
+        }
+
+        .node-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .node-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .node-stats {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .node-children {
+            margin-left: 30px;
+            margin-top: 10px;
+            border-left: 2px dashed #ddd;
+            padding-left: 15px;
+        }
+
+        .computation-log {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border-left: 3px solid #ddd;
+        }
+
+        .log-entry.selection {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+
+        .log-entry.expansion {
+            background: #f3e5f5;
+            border-left-color: #9c27b0;
+        }
+
+        .log-entry.simulation {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+
+        .log-entry.backpropagation {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 MCTS Visualization Tool</h1>
+        <p class="subtitle">Watch Monte Carlo Tree Search explore and evaluate moves in Gomoku step by step</p>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="board-container">
+                    <h3 style="margin-bottom: 15px; color: #667eea;">Gomoku Board (9×9)</h3>
+                    <div class="board">
+                        <div class="board-grid" id="board"></div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #90EE90;"></div>
+                            Best Move
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #c8e6c9;"></div>
+                            Good Move
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ffcdd2;"></div>
+                            Bad Move
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #fff59d;"></div>
+                            Simulating
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <h3 style="margin-bottom: 15px; color: #667eea;">Controls</h3>
+                    
+                    <div class="control-group">
+                        <button id="startMCTS">🚀 Start MCTS</button>
+                        <button id="stepMCTS">⏭️ Step</button>
+                        <button id="pauseMCTS" disabled>⏸️ Pause</button>
+                        <button id="resetGame" class="danger">🔄 Reset Game</button>
+                    </div>
+
+                    <div class="control-group">
+                        <label>
+                            Speed (iterations per second)
+                            <span class="value-display" id="speedValue">5</span>
+                        </label>
+                        <input type="range" id="speedSlider" min="1" max="50" value="5">
+                    </div>
+
+                    <div class="control-group">
+                        <label>
+                            Exploration Constant (C)
+                            <span class="value-display" id="explorationValue">1.41</span>
+                        </label>
+                        <input type="range" id="explorationSlider" min="0" max="3" step="0.1" value="1.41">
+                    </div>
+
+                    <div class="control-group">
+                        <label>
+                            Simulations per Move
+                        </label>
+                        <input type="number" id="simulationCount" min="10" max="10000" value="1000">
+                    </div>
+
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="showAllMoves"> Show all move evaluations
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="info-panel">
+                    <h3>Current Phase</h3>
+                    <div class="phase-indicator">
+                        <div class="phase inactive" id="phaseSelection">
+                            <div>1️⃣ Selection</div>
+                            <div style="font-size: 0.8em; margin-top: 5px;">Choose best node</div>
+                        </div>
+                        <div class="phase inactive" id="phaseExpansion">
+                            <div>2️⃣ Expansion</div>
+                            <div style="font-size: 0.8em; margin-top: 5px;">Add child node</div>
+                        </div>
+                        <div class="phase inactive" id="phaseSimulation">
+                            <div>3️⃣ Simulation</div>
+                            <div style="font-size: 0.8em; margin-top: 5px;">Random playout</div>
+                        </div>
+                        <div class="phase inactive" id="phaseBackpropagation">
+                            <div>4️⃣ Backprop</div>
+                            <div style="font-size: 0.8em; margin-top: 5px;">Update stats</div>
+                        </div>
+                    </div>
+
+                    <h3>Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Iterations</div>
+                            <div class="stat-value" id="totalIterations">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Tree Depth</div>
+                            <div class="stat-value" id="treeDepth">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Nodes Created</div>
+                            <div class="stat-value" id="nodesCreated">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Best Move Win Rate</div>
+                            <div class="stat-value" id="bestWinRate">-</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+
+                <div class="info-panel">
+                    <h3>Computation Log</h3>
+                    <div class="computation-log" id="computationLog"></div>
+                </div>
+
+                <div class="tree-container">
+                    <h3 style="margin-bottom: 15px; color: #667eea;">Search Tree</h3>
+                    <div id="treeView"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // GAME STATE AND BOARD LOGIC
+        // ============================================================================
+
+        const BOARD_SIZE = 9;
+        const EMPTY = 0;
+        const BLACK = 1;
+        const WHITE = 2;
+        const WIN_LENGTH = 5;
+
+        class GameState {
+            constructor(size = BOARD_SIZE) {
+                this.size = size;
+                this.board = Array(size).fill(null).map(() => Array(size).fill(EMPTY));
+                this.currentPlayer = BLACK;
+                this.winner = null;
+                this.moveHistory = [];
+            }
+
+            clone() {
+                const newState = new GameState(this.size);
+                newState.board = this.board.map(row => [...row]);
+                newState.currentPlayer = this.currentPlayer;
+                newState.winner = this.winner;
+                newState.moveHistory = [...this.moveHistory];
+                return newState;
+            }
+
+            makeMove(row, col) {
+                if (this.board[row][col] !== EMPTY || this.winner !== null) {
+                    return false;
+                }
+                this.board[row][col] = this.currentPlayer;
+                this.moveHistory.push({row, col, player: this.currentPlayer});
+                this.checkWinner(row, col);
+                this.currentPlayer = this.currentPlayer === BLACK ? WHITE : BLACK;
+                return true;
+            }
+
+            checkWinner(row, col) {
+                const player = this.board[row][col];
+                const directions = [
+                    [{dr: 0, dc: 1}],   // horizontal
+                    [{dr: 1, dc: 0}],   // vertical
+                    [{dr: 1, dc: 1}],   // diagonal \
+                    [{dr: 1, dc: -1}]   // diagonal /
+                ];
+
+                for (const dir of directions) {
+                    let count = 1;
+                    for (const {dr, dc} of dir) {
+                        // Check positive direction
+                        for (let i = 1; i < WIN_LENGTH; i++) {
+                            const r = row + dr * i;
+                            const c = col + dc * i;
+                            if (r >= 0 && r < this.size && c >= 0 && c < this.size && 
+                                this.board[r][c] === player) {
+                                count++;
+                            } else {
+                                break;
+                            }
+                        }
+                        // Check negative direction
+                        for (let i = 1; i < WIN_LENGTH; i++) {
+                            const r = row - dr * i;
+                            const c = col - dc * i;
+                            if (r >= 0 && r < this.size && c >= 0 && c < this.size && 
+                                this.board[r][c] === player) {
+                                count++;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    if (count >= WIN_LENGTH) {
+                        this.winner = player;
+                        return;
+                    }
+                }
+            }
+
+            getLegalMoves() {
+                const moves = [];
+                if (this.winner !== null) return moves;
+
+                // If board is empty, start in center
+                if (this.moveHistory.length === 0) {
+                    const center = Math.floor(this.size / 2);
+                    return [{row: center, col: center}];
+                }
+
+                // Only consider moves near existing stones (within 2 squares)
+                const considered = new Set();
+                for (let r = 0; r < this.size; r++) {
+                    for (let c = 0; c < this.size; c++) {
+                        if (this.board[r][c] !== EMPTY) {
+                            for (let dr = -2; dr <= 2; dr++) {
+                                for (let dc = -2; dc <= 2; dc++) {
+                                    const nr = r + dr;
+                                    const nc = c + dc;
+                                    if (nr >= 0 && nr < this.size && nc >= 0 && nc < this.size &&
+                                        this.board[nr][nc] === EMPTY) {
+                                        const key = `${nr},${nc}`;
+                                        if (!considered.has(key)) {
+                                            considered.add(key);
+                                            moves.push({row: nr, col: nc});
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return moves;
+            }
+
+            isTerminal() {
+                if (this.winner !== null) return true;
+                return this.getLegalMoves().length === 0;
+            }
+
+            getWinner() {
+                return this.winner;
+            }
+        }
+
+        // ============================================================================
+        // MCTS NODE
+        // ============================================================================
+
+        class MCTSNode {
+            constructor(state, parent = null, move = null) {
+                this.state = state;
+                this.parent = parent;
+                this.move = move; // {row, col}
+                this.children = [];
+                this.visits = 0;
+                this.wins = 0;
+                this.untriedMoves = state.getLegalMoves();
+                this.playerJustMoved = state.currentPlayer === BLACK ? WHITE : BLACK;
+            }
+
+            isFullyExpanded() {
+                return this.untriedMoves.length === 0;
+            }
+
+            isLeaf() {
+                return this.children.length === 0;
+            }
+
+            getUCB1(explorationConstant = 1.41) {
+                if (this.visits === 0) return Infinity;
+                const exploitation = this.wins / this.visits;
+                const exploration = explorationConstant * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+                return exploitation + exploration;
+            }
+
+            bestChild(explorationConstant = 1.41) {
+                return this.children.reduce((best, child) => {
+                    const childUCB = child.getUCB1(explorationConstant);
+                    const bestUCB = best.getUCB1(explorationConstant);
+                    return childUCB > bestUCB ? child : best;
+                });
+            }
+
+            expand() {
+                if (this.untriedMoves.length === 0) return null;
+                
+                const moveIndex = Math.floor(Math.random() * this.untriedMoves.length);
+                const move = this.untriedMoves.splice(moveIndex, 1)[0];
+                
+                const newState = this.state.clone();
+                newState.makeMove(move.row, move.col);
+                
+                const childNode = new MCTSNode(newState, this, move);
+                this.children.push(childNode);
+                
+                return childNode;
+            }
+
+            update(result) {
+                this.visits++;
+                // Result is from perspective of the player who just moved
+                if (result === this.playerJustMoved) {
+                    this.wins++;
+                } else if (result !== null) {
+                    // Loss for this player
+                    // wins stays the same
+                }
+            }
+
+            getWinRate() {
+                return this.visits > 0 ? (this.wins / this.visits) : 0;
+            }
+        }
+
+        // ============================================================================
+        // MCTS ALGORITHM
+        // ============================================================================
+
+        class MCTS {
+            constructor(rootState, explorationConstant = 1.41) {
+                this.root = new MCTSNode(rootState);
+                this.explorationConstant = explorationConstant;
+                this.currentNode = null;
+                this.currentPhase = null;
+                this.simulationState = null;
+                this.iterationCount = 0;
+                this.callbacks = {
+                    onPhaseChange: null,
+                    onNodeSelect: null,
+                    onNodeExpand: null,
+                    onSimulationStep: null,
+                    onBackpropagate: null
+                };
+            }
+
+            // Perform one complete MCTS iteration
+            iterate() {
+                this.iterationCount++;
+                
+                // Phase 1: Selection
+                this.currentPhase = 'selection';
+                this.callbacks.onPhaseChange?.('selection');
+                const node = this.select(this.root);
+                
+                // Phase 2: Expansion
+                this.currentPhase = 'expansion';
+                this.callbacks.onPhaseChange?.('expansion');
+                let expandedNode = node;
+                if (!node.state.isTerminal()) {
+                    expandedNode = node.expand();
+                    if (expandedNode) {
+                        this.callbacks.onNodeExpand?.(expandedNode);
+                    } else {
+                        expandedNode = node;
+                    }
+                }
+                
+                // Phase 3: Simulation
+                this.currentPhase = 'simulation';
+                this.callbacks.onPhaseChange?.('simulation');
+                const result = this.simulate(expandedNode.state);
+                
+                // Phase 4: Backpropagation
+                this.currentPhase = 'backpropagation';
+                this.callbacks.onPhaseChange?.('backpropagation');
+                this.backpropagate(expandedNode, result);
+                
+                return expandedNode;
+            }
+
+            select(node) {
+                let current = node;
+                const path = [current];
+                
+                while (!current.state.isTerminal() && current.isFullyExpanded()) {
+                    current = current.bestChild(this.explorationConstant);
+                    path.push(current);
+                    this.callbacks.onNodeSelect?.(current, path);
+                }
+                
+                return current;
+            }
+
+            simulate(state) {
+                const simState = state.clone();
+                this.simulationState = simState;
+                
+                let stepCount = 0;
+                const maxSteps = 100;
+                
+                while (!simState.isTerminal() && stepCount < maxSteps) {
+                    const moves = simState.getLegalMoves();
+                    if (moves.length === 0) break;
+                    
+                    const randomMove = moves[Math.floor(Math.random() * moves.length)];
+                    simState.makeMove(randomMove.row, randomMove.col);
+                    this.callbacks.onSimulationStep?.(simState, randomMove);
+                    stepCount++;
+                }
+                
+                this.simulationState = null;
+                return simState.getWinner();
+            }
+
+            backpropagate(node, result) {
+                let current = node;
+                const path = [];
+                
+                while (current !== null) {
+                    current.update(result);
+                    path.push(current);
+                    current = current.parent;
+                }
+                
+                this.callbacks.onBackpropagate?.(path);
+            }
+
+            getBestMove() {
+                if (this.root.children.length === 0) return null;
+                
+                // Choose child with highest visit count
+                return this.root.children.reduce((best, child) => {
+                    return child.visits > best.visits ? child : best;
+                });
+            }
+
+            getAllMoveStats() {
+                return this.root.children.map(child => ({
+                    move: child.move,
+                    visits: child.visits,
+                    wins: child.wins,
+                    winRate: child.getWinRate(),
+                    ucb1: child.getUCB1(this.explorationConstant)
+                })).sort((a, b) => b.visits - a.visits);
+            }
+
+            getTreeDepth(node = this.root) {
+                if (node.children.length === 0) return 1;
+                return 1 + Math.max(...node.children.map(child => this.getTreeDepth(child)));
+            }
+
+            countNodes(node = this.root) {
+                let count = 1;
+                for (const child of node.children) {
+                    count += this.countNodes(child);
+                }
+                return count;
+            }
+        }
+
+        // ============================================================================
+        // VISUALIZATION
+        // ============================================================================
+
+        class MCTSVisualization {
+            constructor() {
+                this.gameState = new GameState();
+                this.mcts = null;
+                this.isRunning = false;
+                this.isPaused = false;
+                this.speed = 5; // iterations per second
+                this.explorationConstant = 1.41;
+                this.simulationCount = 1000;
+                this.currentIteration = 0;
+                this.showAllMoves = false;
+                this.logEntries = [];
+                
+                this.initializeBoard();
+                this.initializeControls();
+            }
+
+            initializeBoard() {
+                const boardElement = document.getElementById('board');
+                boardElement.innerHTML = '';
+                
+                for (let row = 0; row < BOARD_SIZE; row++) {
+                    for (let col = 0; col < BOARD_SIZE; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        cell.addEventListener('click', () => {
+                            if (!this.isRunning) {
+                                this.handleCellClick(row, col);
+                            }
+                        });
+                        
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            handleCellClick(row, col) {
+                if (this.gameState.board[row][col] !== EMPTY || this.gameState.winner !== null) {
+                    return;
+                }
+                
+                this.gameState.makeMove(row, col);
+                this.renderBoard();
+                
+                if (!this.gameState.isTerminal()) {
+                    // Start MCTS for computer's move
+                    setTimeout(() => this.startMCTS(), 500);
+                }
+            }
+
+            initializeControls() {
+                document.getElementById('startMCTS').addEventListener('click', () => this.startMCTS());
+                document.getElementById('stepMCTS').addEventListener('click', () => this.stepMCTS());
+                document.getElementById('pauseMCTS').addEventListener('click', () => this.pauseMCTS());
+                document.getElementById('resetGame').addEventListener('click', () => this.resetGame());
+                
+                document.getElementById('speedSlider').addEventListener('input', (e) => {
+                    this.speed = parseInt(e.target.value);
+                    document.getElementById('speedValue').textContent = this.speed;
+                });
+                
+                document.getElementById('explorationSlider').addEventListener('input', (e) => {
+                    this.explorationConstant = parseFloat(e.target.value);
+                    document.getElementById('explorationValue').textContent = this.explorationConstant.toFixed(2);
+                    if (this.mcts) {
+                        this.mcts.explorationConstant = this.explorationConstant;
+                    }
+                });
+                
+                document.getElementById('simulationCount').addEventListener('change', (e) => {
+                    this.simulationCount = parseInt(e.target.value);
+                });
+                
+                document.getElementById('showAllMoves').addEventListener('change', (e) => {
+                    this.showAllMoves = e.target.checked;
+                    this.updateBoardHighlights();
+                });
+            }
+
+            startMCTS() {
+                if (this.gameState.isTerminal()) {
+                    alert('Game is over! Reset to continue.');
+                    return;
+                }
+
+                this.isRunning = true;
+                this.isPaused = false;
+                this.currentIteration = 0;
+                
+                document.getElementById('startMCTS').disabled = true;
+                document.getElementById('pauseMCTS').disabled = false;
+                document.getElementById('stepMCTS').disabled = true;
+                
+                this.mcts = new MCTS(this.gameState, this.explorationConstant);
+                this.setupMCTSCallbacks();
+                
+                this.addLog('Starting MCTS search...', 'selection');
+                
+                this.runMCTSLoop();
+            }
+
+            setupMCTSCallbacks() {
+                this.mcts.callbacks.onPhaseChange = (phase) => {
+                    this.updatePhaseIndicator(phase);
+                };
+                
+                this.mcts.callbacks.onNodeSelect = (node, path) => {
+                    const ucb1 = node.getUCB1(this.explorationConstant);
+                    this.addLog(
+                        `Selected node: Move (${node.move?.row},${node.move?.col}) | ` +
+                        `Visits: ${node.visits} | Win Rate: ${(node.getWinRate()*100).toFixed(1)}% | ` +
+                        `UCB1: ${ucb1.toFixed(3)}`,
+                        'selection'
+                    );
+                };
+                
+                this.mcts.callbacks.onNodeExpand = (node) => {
+                    this.addLog(
+                        `Expanded new node: Move (${node.move.row},${node.move.col})`,
+                        'expansion'
+                    );
+                };
+                
+                this.mcts.callbacks.onSimulationStep = (state, move) => {
+                    // Optionally log simulation steps (can be verbose)
+                };
+                
+                this.mcts.callbacks.onBackpropagate = (path) => {
+                    this.addLog(
+                        `Backpropagated through ${path.length} nodes`,
+                        'backpropagation'
+                    );
+                };
+            }
+
+            async runMCTSLoop() {
+                const targetIterations = this.simulationCount;
+                
+                while (this.isRunning && !this.isPaused && this.currentIteration < targetIterations) {
+                    this.mcts.iterate();
+                    this.currentIteration++;
+                    
+                    this.updateStatistics();
+                    this.updateProgressBar();
+                    
+                    if (this.currentIteration % 10 === 0) {
+                        this.updateBoardHighlights();
+                        this.renderTree();
+                    }
+                    
+                    // Delay based on speed
+                    await this.sleep(1000 / this.speed);
+                }
+                
+                if (this.currentIteration >= targetIterations) {
+                    this.finishMCTS();
+                }
+            }
+
+            stepMCTS() {
+                if (!this.mcts) {
+                    this.startMCTS();
+                    this.isPaused = true;
+                    this.isRunning = false;
+                    return;
+                }
+                
+                if (this.currentIteration >= this.simulationCount) {
+                    this.finishMCTS();
+                    return;
+                }
+                
+                this.mcts.iterate();
+                this.currentIteration++;
+                
+                this.updateStatistics();
+                this.updateProgressBar();
+                this.updateBoardHighlights();
+                this.renderTree();
+            }
+
+            pauseMCTS() {
+                this.isPaused = true;
+                document.getElementById('pauseMCTS').disabled = true;
+                document.getElementById('startMCTS').disabled = false;
+                document.getElementById('stepMCTS').disabled = false;
+                document.getElementById('startMCTS').textContent = '▶️ Resume';
+            }
+
+            finishMCTS() {
+                this.isRunning = false;
+                this.isPaused = false;
+                
+                document.getElementById('startMCTS').disabled = false;
+                document.getElementById('pauseMCTS').disabled = true;
+                document.getElementById('stepMCTS').disabled = true;
+                document.getElementById('startMCTS').textContent = '🚀 Start MCTS';
+                
+                const bestMove = this.mcts.getBestMove();
+                if (bestMove) {
+                    this.addLog(
+                        `MCTS Complete! Best move: (${bestMove.move.row},${bestMove.move.col}) | ` +
+                        `Visits: ${bestMove.visits} | Win Rate: ${(bestMove.getWinRate()*100).toFixed(1)}%`,
+                        'selection'
+                    );
+                    
+                    this.updateBoardHighlights();
+                    
+                    // Make the move
+                    setTimeout(() => {
+                        this.gameState.makeMove(bestMove.move.row, bestMove.move.col);
+                        this.renderBoard();
+                        this.mcts = null;
+                        
+                        if (this.gameState.winner !== null) {
+                            const winner = this.gameState.winner === BLACK ? 'Black' : 'White';
+                            setTimeout(() => alert(`${winner} wins!`), 100);
+                        }
+                    }, 1000);
+                }
+                
+                this.updatePhaseIndicator(null);
+            }
+
+            resetGame() {
+                this.isRunning = false;
+                this.isPaused = false;
+                this.mcts = null;
+                this.gameState = new GameState();
+                this.currentIteration = 0;
+                this.logEntries = [];
+                
+                this.renderBoard();
+                this.updateStatistics();
+                this.updateProgressBar();
+                this.updatePhaseIndicator(null);
+                document.getElementById('computationLog').innerHTML = '';
+                document.getElementById('treeView').innerHTML = '<p style="color: #999;">No search tree yet. Start MCTS to begin.</p>';
+                
+                document.getElementById('startMCTS').disabled = false;
+                document.getElementById('pauseMCTS').disabled = true;
+                document.getElementById('stepMCTS').disabled = false;
+                document.getElementById('startMCTS').textContent = '🚀 Start MCTS';
+            }
+
+            renderBoard() {
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach(cell => {
+                    const row = parseInt(cell.dataset.row);
+                    const col = parseInt(cell.dataset.col);
+                    const value = this.gameState.board[row][col];
+                    
+                    cell.innerHTML = '';
+                    cell.classList.remove('has-stone');
+                    
+                    if (value !== EMPTY) {
+                        const stone = document.createElement('div');
+                        stone.className = `stone ${value === BLACK ? 'black' : 'white'}`;
+                        cell.appendChild(stone);
+                        cell.classList.add('has-stone');
+                    }
+                });
+                
+                this.updateBoardHighlights();
+            }
+
+            updateBoardHighlights() {
+                // Clear all highlights
+                document.querySelectorAll('.cell').forEach(cell => {
+                    cell.classList.remove('best-move', 'good-move', 'bad-move');
+                });
+                
+                if (!this.mcts || !this.showAllMoves) {
+                    // Only show best move
+                    if (this.mcts) {
+                        const bestMove = this.mcts.getBestMove();
+                        if (bestMove) {
+                            const cell = document.querySelector(
+                                `.cell[data-row="${bestMove.move.row}"][data-col="${bestMove.move.col}"]`
+                            );
+                            if (cell) cell.classList.add('best-move');
+                        }
+                    }
+                    return;
+                }
+                
+                const moveStats = this.mcts.getAllMoveStats();
+                if (moveStats.length === 0) return;
+                
+                const bestWinRate = moveStats[0].winRate;
+                const worstWinRate = moveStats[moveStats.length - 1].winRate;
+                
+                moveStats.forEach((stat, index) => {
+                    const cell = document.querySelector(
+                        `.cell[data-row="${stat.move.row}"][data-col="${stat.move.col}"]`
+                    );
+                    if (!cell) return;
+                    
+                    if (index === 0) {
+                        cell.classList.add('best-move');
+                    } else if (stat.winRate >= bestWinRate * 0.7) {
+                        cell.classList.add('good-move');
+                    } else if (stat.winRate <= worstWinRate * 1.3) {
+                        cell.classList.add('bad-move');
+                    }
+                });
+            }
+
+            updatePhaseIndicator(phase) {
+                const phases = ['selection', 'expansion', 'simulation', 'backpropagation'];
+                phases.forEach(p => {
+                    const element = document.getElementById(`phase${p.charAt(0).toUpperCase() + p.slice(1)}`);
+                    if (p === phase) {
+                        element.classList.remove('inactive');
+                        element.classList.add('active');
+                    } else {
+                        element.classList.remove('active');
+                        element.classList.add('inactive');
+                    }
+                });
+            }
+
+            updateStatistics() {
+                document.getElementById('totalIterations').textContent = this.currentIteration;
+                
+                if (this.mcts) {
+                    document.getElementById('treeDepth').textContent = this.mcts.getTreeDepth();
+                    document.getElementById('nodesCreated').textContent = this.mcts.countNodes();
+                    
+                    const bestMove = this.mcts.getBestMove();
+                    if (bestMove) {
+                        const winRate = (bestMove.getWinRate() * 100).toFixed(1);
+                        document.getElementById('bestWinRate').textContent = `${winRate}%`;
+                    }
+                }
+            }
+
+            updateProgressBar() {
+                const progress = (this.currentIteration / this.simulationCount) * 100;
+                const progressBar = document.getElementById('progressBar');
+                progressBar.style.width = `${progress}%`;
+                progressBar.textContent = `${Math.floor(progress)}%`;
+            }
+
+            addLog(message, type) {
+                this.logEntries.push({message, type});
+                if (this.logEntries.length > 100) {
+                    this.logEntries.shift();
+                }
+                
+                const logElement = document.getElementById('computationLog');
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                entry.textContent = message;
+                logElement.appendChild(entry);
+                
+                // Auto scroll to bottom
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+
+            renderTree() {
+                if (!this.mcts) return;
+                
+                const treeView = document.getElementById('treeView');
+                treeView.innerHTML = '';
+                
+                this.renderNode(this.mcts.root, treeView, 0);
+            }
+
+            renderNode(node, container, depth) {
+                if (depth > 2) return; // Limit depth to avoid too much clutter
+                
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'tree-node';
+                
+                const moveText = node.move 
+                    ? `Move: (${node.move.row}, ${node.move.col})` 
+                    : 'Root';
+                
+                const winRate = (node.getWinRate() * 100).toFixed(1);
+                const ucb1 = node.parent ? node.getUCB1(this.explorationConstant).toFixed(3) : 'N/A';
+                
+                nodeDiv.innerHTML = `
+                    <div class="node-info">
+                        <div class="node-label">${moveText}</div>
+                        <div class="node-stats">
+                            Visits: ${node.visits} | 
+                            Wins: ${node.wins} | 
+                            Win Rate: ${winRate}% | 
+                            UCB1: ${ucb1}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(nodeDiv);
+                
+                if (node.children.length > 0) {
+                    const childrenDiv = document.createElement('div');
+                    childrenDiv.className = 'node-children';
+                    
+                    // Sort children by visits
+                    const sortedChildren = [...node.children].sort((a, b) => b.visits - a.visits);
+                    
+                    // Show top 5 children
+                    sortedChildren.slice(0, 5).forEach(child => {
+                        this.renderNode(child, childrenDiv, depth + 1);
+                    });
+                    
+                    if (sortedChildren.length > 5) {
+                        const moreDiv = document.createElement('div');
+                        moreDiv.style.color = '#999';
+                        moreDiv.style.fontStyle = 'italic';
+                        moreDiv.style.padding = '10px';
+                        moreDiv.textContent = `... and ${sortedChildren.length - 5} more children`;
+                        childrenDiv.appendChild(moreDiv);
+                    }
+                    
+                    nodeDiv.appendChild(childrenDiv);
+                }
+            }
+
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // ============================================================================
+        // INITIALIZE APPLICATION
+        // ============================================================================
+
+        let app;
+        window.addEventListener('DOMContentLoaded', () => {
+            app = new MCTSVisualization();
+            console.log('MCTS Visualization initialized');
+        });
+    </script>
+</body>
+</html>

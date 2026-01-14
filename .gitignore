@@ -1,0 +1,110 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temp files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~ 
+*.pid
+*.seed
+
+# Editor/IDE
+.vscode/
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+env/
+venv/
+.venv/
+pip-wheel-metadata/
+pip-log.txt
+*.egg-info/
+.eggs/
+.python-version
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+dist/
+build/
+out/
+
+# C/C++ / Build systems
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+CMakeLists.txt.user
+Makefile.user
+*.o
+*.obj
+*.out
+*.exe
+*.dll
+*.so
+*.a
+
+# Rust
+target/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+
+# Go
+vendor/
+*.exe
+
+# Packaging / distribution
+dist/
+*.egg
+*.whl
+
+# Secrets / env
+.env
+.env.*
+.env.local
+credentials.json
+secrets.yml
+*.key
+*.pem
+
+# Misc
+.cache/
+tmp/
+temp/
+coverage/
+reports/
+.DS_Store?
