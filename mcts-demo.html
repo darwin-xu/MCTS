@@ -985,18 +985,20 @@
                     return;
                 }
 
+                // If MCTS not initialized or starting fresh
+                if (!this.mcts) {
+                    this.currentIteration = 0;
+                    this.mcts = new MCTS(this.gameState, this.explorationConstant);
+                    this.setupMCTSCallbacks();
+                    this.addLog('Starting MCTS search...', 'selection');
+                }
+                
                 this.isRunning = true;
                 this.isPaused = false;
-                this.currentIteration = 0;
                 
                 document.getElementById('startMCTS').disabled = true;
                 document.getElementById('pauseMCTS').disabled = false;
                 document.getElementById('stepMCTS').disabled = true;
-                
-                this.mcts = new MCTS(this.gameState, this.explorationConstant);
-                this.setupMCTSCallbacks();
-                
-                this.addLog('Starting MCTS search...', 'selection');
                 
                 this.runMCTSLoop();
             }
@@ -1061,10 +1063,11 @@
 
             stepMCTS() {
                 if (!this.mcts) {
-                    this.startMCTS();
-                    this.isPaused = true;
-                    this.isRunning = false;
-                    return;
+                    // Initialize MCTS without starting the automatic loop
+                    this.currentIteration = 0;
+                    this.mcts = new MCTS(this.gameState, this.explorationConstant);
+                    this.setupMCTSCallbacks();
+                    this.addLog('Starting MCTS search in step mode...', 'selection');
                 }
                 
                 if (this.currentIteration >= this.simulationCount) {
@@ -1082,6 +1085,7 @@
             }
 
             pauseMCTS() {
+                this.isRunning = false;
                 this.isPaused = true;
                 document.getElementById('pauseMCTS').disabled = true;
                 document.getElementById('startMCTS').disabled = false;
